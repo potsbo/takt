@@ -1,13 +1,17 @@
 # sample
-jobs:
+tasks:
   install:
     steps:
-      - run: echo installing...; sleep 5; done
+      - run: echo installing...; sleep 5; echo done
   server:
+    depends:
+      - install
     steps:
       - run: while true; do echo serving html; sleep 1s; done
     tags: ['http']
   grpc-server:
+    depends:
+      - install
     steps:
       - run: while true; do echo serving grpc; sleep 1s; done
     tags: ['grpc']

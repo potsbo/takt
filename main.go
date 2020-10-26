@@ -2,13 +2,13 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"os"
 	"time"
 
 	"github.com/kvz/logstreamer"
+	"github.com/pkg/errors"
 	"github.com/potsbo/takt/pkg/task"
 	"golang.org/x/sync/errgroup"
 )
@@ -20,33 +20,19 @@ func main() {
 }
 
 func run() error {
-	tasks := []task.Task{
-		{
-			Name:    "task1",
-			Command: "echo task1; sleep 2; echo done",
-			Depends: nil,
-		},
-		{
-			Name:    "task2",
-			Command: "echo task2; sleep 2; echoaeuaoeu done",
-			Depends: []string{"task1"},
-		},
-		{
-			Name:    "task3",
-			Command: "echo task3",
-			Depends: []string{"task1"},
-		},
-		{
-			Name:    "task4",
-			Command: "while true; do echo test; sleep 1s; done",
-			Depends: []string{"task2", "task3"},
-		},
-		{
-			Name:    "task5",
-			Command: "while true; do echo test; sleep 1s; done",
-			Depends: []string{"task2", "task3"},
-		},
+	path := ".takt.yaml"
+	file, err := os.Open(path)
+	if err != nil {
+		return errors.Wrap(err, "failed to open file")
 	}
+	defer file.Close()
+
+	takt, err := task.Parse(file)
+	if err != nil {
+		return err
+	}
+
+	tasks := task.FromTakt(*takt)
 
 	taskMap := map[string]*task.Task{}
 	for _, tsk := range tasks {
