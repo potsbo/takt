@@ -18,10 +18,6 @@ const (
 	debug = false
 )
 
-var (
-	DependencyNotFulfilledErr = errors.New("Dependency not filled")
-)
-
 func main() {
 	if err := run(); err != nil {
 		log.Fatal(err)
@@ -87,18 +83,8 @@ func run() error {
 			defer prefixLogger.Close()
 
 			runner := func() error {
-				okToGo := true
-				for _, c := range t.Waiting {
-					notification := <-c
-					if debug {
-						prefixLogger.Logger.Println(t.Name, notification)
-					}
-					if !notification.Ok {
-						okToGo = notification.Ok
-					}
-				}
-				if !okToGo {
-					return DependencyNotFulfilledErr
+				if err := t.WaitDependecies(); err != nil {
+					return err
 				}
 				fmt.Fprintf(prefixLogger, "starting\n")
 				cmd := execx.CommandContext(ctx, "sh", "-c", t.Command)
@@ -121,7 +107,7 @@ func run() error {
 						Name: t.Name,
 					}
 				}
-				if err == DependencyNotFulfilledErr {
+				if err == task.DependencyNotFulfilledErr {
 					return nil
 				}
 				fmt.Fprintf(prefixLogger, "runner finished with err, %v\n", err)
