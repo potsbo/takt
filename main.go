@@ -13,10 +13,6 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-const (
-	debug = false
-)
-
 func main() {
 	if err := run(); err != nil {
 		log.Fatal(err)
