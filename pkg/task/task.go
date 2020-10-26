@@ -40,17 +40,41 @@ type TaskNotification struct {
 	name string
 }
 
-func FromTakt(takt Takt) []Task {
-	ts := []Task{}
+func FromTakt(takt Takt) ([]*Task, error) {
+	ts := []*Task{}
 	for name, tsk := range takt.Tasks {
 		tsk := tsk
 		tsk.Name = name
-		ts = append(ts, tsk)
+		ts = append(ts, &tsk)
 	}
-	return ts
+
+	if err := resolveDeps(ts); err != nil {
+		return nil, errors.Wrap(err, "failed to resolve dependencies")
+	}
+
+	return ts, nil
 }
 
-func (t *Task) DependsOn(dependedTask *Task) {
+func resolveDeps(tasks []*Task) error {
+	taskMap := map[string]*Task{}
+	for _, tsk := range tasks {
+		taskMap[tsk.Name] = tsk
+	}
+
+	for _, t := range taskMap {
+		for _, dependedTaskName := range t.Depends {
+			dependedTask, ok := taskMap[dependedTaskName]
+			if !ok {
+				return errors.New("task not found")
+			}
+			t.dependsOn(dependedTask)
+		}
+	}
+
+	return nil
+}
+
+func (t *Task) dependsOn(dependedTask *Task) {
 	c := make(chan TaskNotification)
 	dependedTask.doneNotification = append(dependedTask.doneNotification, c)
 	t.waiting = append(t.waiting, c)
