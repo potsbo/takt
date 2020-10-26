@@ -8,7 +8,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/izumin5210/execx"
 	"github.com/kvz/logstreamer"
 	"github.com/potsbo/takt/pkg/task"
 	"golang.org/x/sync/errgroup"
@@ -33,7 +32,7 @@ func run() error {
 		},
 		{
 			Name:    "task2",
-			Command: "echo task2; sleep 2; echo done",
+			Command: "echo task2; sleep 2; echoaeuaoeu done",
 			Depends: []string{"task1"},
 		},
 		{
@@ -76,50 +75,14 @@ func run() error {
 
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
 	for _, t := range taskMap {
-
 		t := t
 		eg.Go(func() error {
 			prefixLogger := logstreamer.NewLogstreamer(logger, fmt.Sprintf("%s: ", t.Name), false)
 			defer prefixLogger.Close()
 
-			runner := func() error {
-				if err := t.WaitDependecies(); err != nil {
-					return err
-				}
-				fmt.Fprintf(prefixLogger, "starting\n")
-				cmd := execx.CommandContext(ctx, "sh", "-c", t.Command)
-				cmd.Stdout = prefixLogger
-				cmd.Stderr = os.Stderr
-				if err := cmd.Start(); err != nil {
-					return err
-				}
-				if err := cmd.Wait(); err != nil {
-					return err
-				}
-				return nil
-			}
-
-			if err := runner(); err != nil {
+			if err := t.Run(ctx, prefixLogger); err != nil {
 				cancel()
-				for _, done := range t.DoneNotification {
-					done <- task.TaskNotification{
-						Ok:   false,
-						Name: t.Name,
-					}
-				}
-				if err == task.DependencyNotFulfilledErr {
-					return nil
-				}
-				fmt.Fprintf(prefixLogger, "runner finished with err, %v\n", err)
 				return err
-			}
-
-			fmt.Fprintf(prefixLogger, "done\n")
-			for _, done := range t.DoneNotification {
-				done <- task.TaskNotification{
-					Ok:   true,
-					Name: t.Name,
-				}
 			}
 
 			return nil
