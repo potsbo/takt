@@ -1,0 +1,15 @@
+# sample
+jobs:
+  install:
+    steps:
+      - run: echo installing...; sleep 5; done
+  server:
+    steps:
+      - run: while true; do echo serving html; sleep 1s; done
+    tags: ['http']
+  grpc-server:
+    steps:
+      - run: while true; do echo serving grpc; sleep 1s; done
+    tags: ['grpc']
+    env:
+      GRPC: 'true'
