@@ -89,12 +89,12 @@ func (t Operation) waitDependecies() error {
 	return nil
 }
 
-func (t Operation) Run(ctx context.Context, prefixLogger io.Writer) error {
+func (t Operation) Run(ctx context.Context, logger io.Writer) error {
 	runner := func() error {
 		if err := t.waitDependecies(); err != nil {
 			return err
 		}
-		if err := t.task.Execute(ctx, prefixLogger); err != nil {
+		if err := t.task.Execute(ctx, logger); err != nil {
 			return err
 		}
 		return nil
@@ -110,11 +110,11 @@ func (t Operation) Run(ctx context.Context, prefixLogger io.Writer) error {
 		if err == dependencyNotFulfilledErr {
 			return nil
 		}
-		fmt.Fprintf(prefixLogger, "runner finished with err, %v\n", err)
+		fmt.Fprintf(logger, "runner finished with err, %v\n", err)
 		return err
 	}
 
-	fmt.Fprintf(prefixLogger, "done\n")
+	fmt.Fprintf(logger, "done\n")
 	for _, done := range t.status.doneNotification {
 		done <- taskNotification{
 			ok:   true,
