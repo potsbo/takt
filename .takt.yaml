@@ -1,19 +1,18 @@
 # sample
 tasks:
-  install:
+  bundle:
     steps:
-      - run: echo installing...; sleep 5; echo done
-  server:
+      - run: bundle install
+  yarn:
+    steps:
+      - run: yarn install
+  rails:
     depends:
-      - install
+      - bundle
     steps:
-      - run: while true; do echo serving html; sleep 1s; done
-    tags: ['http']
-  grpc-server:
+      - run: bin/rails s
+  dev-server:
     depends:
-      - install
+      - yarn
     steps:
-      - run: while true; do echo serving grpc; sleep 1s; done
-    tags: ['grpc']
-    env:
-      GRPC: 'true'
+      - run: yarn start
