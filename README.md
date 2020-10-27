@@ -10,10 +10,7 @@ This tool is now under implementation. Many planned features are missing.
 
 `takt` includes several notable features
 - Dependency Resolution
-- Ctrl-C Termination
-- Fail Fast
-
-- 
+- Immediate Termination
 
 ### Example
 
@@ -46,6 +43,7 @@ This configuration above, `takt` does as follows
 
 So that you can start multiple processes with a single command.
 
-### Ctrl-C Termination
+### Immediate Termination
 
-
+Unlikee `make`, when a task exited with errors, `takt` immediately sends `SIGTERM` to safely stop all other tasks.
+In the example above, when `yarn start` failed to start `rails` process would be terminated.
