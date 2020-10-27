@@ -15,6 +15,7 @@ import (
 	"github.com/izumin5210/execx"
 	"github.com/kvz/logstreamer"
 	"github.com/pkg/errors"
+	"github.com/potsbo/takt/pkg/operation"
 	"github.com/potsbo/takt/pkg/task"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
@@ -107,7 +108,7 @@ func (t taktRunner) Run(ctx context.Context) error {
 		return err
 	}
 
-	tasks, err := task.FromTakt(*takt)
+	tasks, err := operation.FromTakt(*takt)
 	if err != nil {
 		return err
 	}

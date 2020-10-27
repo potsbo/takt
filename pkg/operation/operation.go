@@ -1,4 +1,4 @@
-package task
+package operation
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"io"
 
 	"github.com/pkg/errors"
+	"github.com/potsbo/takt/pkg/task"
 )
 
 var (
@@ -14,7 +15,7 @@ var (
 
 type Operation struct {
 	Name   string
-	task   *Task
+	task   *task.Task
 	status status
 }
 
@@ -23,7 +24,12 @@ type status struct {
 	waiting          []chan TaskNotification
 }
 
-func FromTakt(takt Takt) ([]*Operation, error) {
+type TaskNotification struct {
+	ok   bool
+	name string
+}
+
+func FromTakt(takt task.Takt) ([]*Operation, error) {
 	ts := []*Operation{}
 	for name, tsk := range takt.Tasks {
 		tsk := tsk
@@ -88,7 +94,7 @@ func (t Operation) Run(ctx context.Context, prefixLogger io.Writer) error {
 		if err := t.waitDependecies(); err != nil {
 			return err
 		}
-		if err := t.task.execute(ctx, prefixLogger); err != nil {
+		if err := t.task.Execute(ctx, prefixLogger); err != nil {
 			return err
 		}
 		return nil

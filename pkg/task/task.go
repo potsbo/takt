@@ -28,12 +28,7 @@ type Step struct {
 	Run string
 }
 
-type TaskNotification struct {
-	ok   bool
-	name string
-}
-
-func (t Task) execute(ctx context.Context, prefixLogger io.Writer) error {
+func (t Task) Execute(ctx context.Context, prefixLogger io.Writer) error {
 	fmt.Fprintf(prefixLogger, "starting\n")
 	for _, step := range t.Steps {
 		cmd := execx.CommandContext(ctx, "sh", "-c", step.Run)
