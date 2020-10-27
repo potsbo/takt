@@ -9,6 +9,7 @@ import (
 	"syscall"
 
 	"github.com/izumin5210/clig/pkg/clib"
+	"github.com/izumin5210/execx"
 	"github.com/kvz/logstreamer"
 	"github.com/pkg/errors"
 	"github.com/potsbo/takt/pkg/task"
@@ -68,21 +69,24 @@ func newCmd(ioset *clib.IO) *cobra.Command {
 			}
 
 			{
-				done := make(chan bool, 1)
-
-				c := make(chan os.Signal, 1)
-				signal.Notify(c, os.Interrupt, syscall.SIGTERM, os.Kill)
-				go func() {
-					<-c
+				cancelReceived := make(chan os.Signal, 1)
+				signal.Notify(cancelReceived, os.Interrupt, syscall.SIGTERM, os.Kill)
+				clean := func() {
+					<-cancelReceived
 					fmt.Println("Interrupted, cleaning up...")
 					cancel()
-					done <- true
-				}()
+				}
+				go clean()
 
 				err := runner(ctx)
-				close(c)
-				<-done
-				return errors.Wrap(err, "failed to run")
+				close(cancelReceived)
+
+				if es, ok := err.(*execx.ExitStatus); ok {
+					if es.Signaled {
+						return nil
+					}
+				}
+				return errors.Wrap(err, "runner exited with error")
 			}
 		},
 	}
