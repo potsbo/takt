@@ -23,9 +23,6 @@ func newCmd(ioset *clib.IO) *cobra.Command {
 		Use:   "takt",
 		Short: "Task runner with cancel",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
-
 			runner := func(ctx context.Context) error {
 				file, err := os.Open(taktfilePath)
 				if err != nil {
@@ -43,7 +40,7 @@ func newCmd(ioset *clib.IO) *cobra.Command {
 					return err
 				}
 
-				eg := errgroup.Group{}
+				eg, ctx := errgroup.WithContext(ctx)
 
 				logger := log.New(ioset.Out, "", log.Ldate|log.Ltime)
 				for _, t := range tasks {
@@ -52,23 +49,17 @@ func newCmd(ioset *clib.IO) *cobra.Command {
 						prefixLogger := logstreamer.NewLogstreamer(logger, fmt.Sprintf("%s: ", t.Name), false)
 						defer prefixLogger.Close()
 
-						if err := t.Run(ctx, prefixLogger); err != nil {
-							cancel()
-							return err
-						}
-
-						return nil
+						return t.Run(ctx, prefixLogger)
 					})
 				}
 
-				if err := eg.Wait(); err != nil {
-					return err
-				}
-
-				return nil
+				return eg.Wait()
 			}
 
 			{
+				ctx, cancel := context.WithCancel(context.Background())
+				defer cancel()
+
 				cancelReceived := make(chan os.Signal, 1)
 				signal.Notify(cancelReceived, os.Interrupt, syscall.SIGTERM, os.Kill)
 				clean := func() {
