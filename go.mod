@@ -3,11 +3,11 @@ module github.com/potsbo/takt
 go 1.14
 
 require (
+	github.com/fatih/color v1.9.0
 	github.com/izumin5210/clig v0.3.1
 	github.com/izumin5210/execx v0.1.0
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/kvz/logstreamer v0.0.0-20201023134116-02d20f4338f5
-	github.com/mattn/go-colorable v0.1.2 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v0.0.5
 	go.uber.org/atomic v1.4.0 // indirect
