@@ -28,11 +28,11 @@ type Step struct {
 	Run string
 }
 
-func (t Task) Execute(ctx context.Context, prefixLogger io.Writer) error {
-	fmt.Fprintf(prefixLogger, "starting\n")
+func (t Task) Execute(ctx context.Context, logger io.Writer) error {
+	fmt.Fprintf(logger, "starting\n")
 	for _, step := range t.Steps {
 		cmd := execx.CommandContext(ctx, "sh", "-c", step.Run)
-		cmd.Stdout = prefixLogger
+		cmd.Stdout = logger
 		cmd.Stderr = os.Stderr
 		if err := cmd.Start(); err != nil {
 			return err

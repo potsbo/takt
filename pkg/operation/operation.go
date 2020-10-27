@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	DependencyNotFulfilledErr = errors.New("Dependency not filled")
+	dependencyNotFulfilledErr = errors.New("Dependency not filled")
 )
 
 type Operation struct {
@@ -20,11 +20,11 @@ type Operation struct {
 }
 
 type status struct {
-	doneNotification []chan TaskNotification
-	waiting          []chan TaskNotification
+	doneNotification []chan taskNotification
+	waiting          []chan taskNotification
 }
 
-type TaskNotification struct {
+type taskNotification struct {
 	ok   bool
 	name string
 }
@@ -68,7 +68,7 @@ func resolveDeps(operations []*Operation) error {
 }
 
 func (t *Operation) dependsOn(dependedTask *Operation) {
-	c := make(chan TaskNotification)
+	c := make(chan taskNotification)
 	dependedTask.status.doneNotification = append(dependedTask.status.doneNotification, c)
 	t.status.waiting = append(t.status.waiting, c)
 }
@@ -83,7 +83,7 @@ func (t Operation) waitDependecies() error {
 		}
 	}
 	if !okToGo {
-		return DependencyNotFulfilledErr
+		return dependencyNotFulfilledErr
 	}
 
 	return nil
@@ -102,12 +102,12 @@ func (t Operation) Run(ctx context.Context, prefixLogger io.Writer) error {
 
 	if err := runner(); err != nil {
 		for _, done := range t.status.doneNotification {
-			done <- TaskNotification{
+			done <- taskNotification{
 				ok:   false,
 				name: t.Name,
 			}
 		}
-		if err == DependencyNotFulfilledErr {
+		if err == dependencyNotFulfilledErr {
 			return nil
 		}
 		fmt.Fprintf(prefixLogger, "runner finished with err, %v\n", err)
@@ -116,7 +116,7 @@ func (t Operation) Run(ctx context.Context, prefixLogger io.Writer) error {
 
 	fmt.Fprintf(prefixLogger, "done\n")
 	for _, done := range t.status.doneNotification {
-		done <- TaskNotification{
+		done <- taskNotification{
 			ok:   true,
 			name: t.Name,
 		}
