@@ -2,10 +2,12 @@ package engine
 
 import (
 	"context"
+	"hash/fnv"
 	"log"
 	"os"
 	"strings"
 
+	"github.com/fatih/color"
 	"github.com/izumin5210/clig/pkg/clib"
 	"github.com/kvz/logstreamer"
 	"github.com/pkg/errors"
@@ -97,4 +99,21 @@ func WithOnlyTags(tags ...string) Option {
 	return func(opt *option) {
 		opt.tagOnlyList = tags
 	}
+}
+
+var colorList = []*color.Color{
+	color.New(color.FgHiCyan),
+	color.New(color.FgHiGreen),
+	color.New(color.FgHiMagenta),
+	color.New(color.FgHiYellow),
+	color.New(color.FgHiBlue),
+	color.New(color.FgHiRed),
+}
+
+func determineColor(key string) *color.Color {
+	hash := fnv.New32()
+	hash.Write([]byte(key))
+	idx := hash.Sum32() % uint32(len(colorList))
+
+	return colorList[idx]
 }
