@@ -29,6 +29,7 @@ func newCmd(ioset *clib.IO) *cobra.Command {
 
 			options := []engine.Option{
 				engine.WithOnlyTags(opts.Only...),
+				engine.WithTaktFilePath(opts.Taktfile),
 			}
 
 			return engine.WrapInterrupt(runner).Run(ctx, options...)

@@ -3,10 +3,12 @@ tasks:
   bundle:
     steps:
       - run: bundle install
+    tags: ['http']
   yarn:
     steps:
       - run: yarn install
   rails:
+    tags: ['http']
     depends:
       - bundle
     steps:

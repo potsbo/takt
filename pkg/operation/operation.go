@@ -29,9 +29,50 @@ type taskNotification struct {
 	name string
 }
 
-func FromTakt(takt task.Takt) ([]*Operation, error) {
+type option struct {
+	tagOnlyList []string
+}
+
+func (o option) available(t task.Task) bool {
+	if len(o.tagOnlyList) > 0 {
+		//  TODO: better logic
+		for _, only := range o.tagOnlyList {
+			for _, tag := range t.Tags {
+				if only == tag {
+					return true
+				}
+			}
+		}
+		return false
+	}
+
+	return true
+}
+
+type Option func(*option)
+
+var nopOption = func(*option) {}
+
+func WithOnlyTags(tags ...string) Option {
+	if len(tags) == 0 {
+		return nopOption
+	}
+	return func(opt *option) {
+		opt.tagOnlyList = tags
+	}
+}
+
+func FromTakt(takt task.Takt, opts ...Option) ([]*Operation, error) {
+	opt := option{}
+	for _, op := range opts {
+		op(&opt)
+	}
+
 	ts := []*Operation{}
 	for name, tsk := range takt.Tasks {
+		if !opt.available(tsk) {
+			continue
+		}
 		tsk := tsk
 		op := Operation{
 			Name:   name,

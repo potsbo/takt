@@ -62,22 +62,26 @@ func (t runner) Run(ctx context.Context, opts ...Option) error {
 		return err
 	}
 
-	tasks, err := operation.FromTakt(*takt)
+	operations, err := operation.FromTakt(*takt, operation.WithOnlyTags(opt.tagOnlyList...))
 	if err != nil {
 		return err
+	}
+
+	if len(operations) == 0 {
+		return errors.New("No task found")
 	}
 
 	eg, ctx := errgroup.WithContext(ctx)
 
 	max := 0
-	for _, tsk := range tasks {
+	for _, tsk := range operations {
 		if len(tsk.Name) > max {
 			max = len(tsk.Name)
 		}
 	}
 
 	logger := log.New(t.ioset.Out, "", log.Ldate|log.Ltime)
-	for _, t := range tasks {
+	for _, t := range operations {
 		t := t
 		eg.Go(func() error {
 			spaces := strings.Repeat(" ", max-len(t.Name)+1)
@@ -98,6 +102,12 @@ func WithOnlyTags(tags ...string) Option {
 	}
 	return func(opt *option) {
 		opt.tagOnlyList = tags
+	}
+}
+
+func WithTaktFilePath(path string) Option {
+	return func(opt *option) {
+		opt.taktfilePath = path
 	}
 }
 
