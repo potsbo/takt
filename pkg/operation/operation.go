@@ -1,4 +1,4 @@
-package task
+package operation
 
 import (
 	"context"
@@ -6,26 +6,73 @@ import (
 	"io"
 
 	"github.com/pkg/errors"
+	"github.com/potsbo/takt/pkg/task"
 )
 
 var (
-	DependencyNotFulfilledErr = errors.New("Dependency not filled")
+	dependencyNotFulfilledErr = errors.New("Dependency not filled")
 )
 
 type Operation struct {
 	Name   string
-	task   *Task
+	task   *task.Task
 	status status
 }
 
 type status struct {
-	doneNotification []chan TaskNotification
-	waiting          []chan TaskNotification
+	doneNotification []chan taskNotification
+	waiting          []chan taskNotification
 }
 
-func FromTakt(takt Takt) ([]*Operation, error) {
+type taskNotification struct {
+	ok   bool
+	name string
+}
+
+type option struct {
+	tagOnlyList []string
+}
+
+func (o option) available(t task.Task) bool {
+	if len(o.tagOnlyList) > 0 {
+		//  TODO: better logic
+		for _, only := range o.tagOnlyList {
+			for _, tag := range t.Tags {
+				if only == tag {
+					return true
+				}
+			}
+		}
+		return false
+	}
+
+	return true
+}
+
+type Option func(*option)
+
+var nopOption = func(*option) {}
+
+func WithOnlyTags(tags ...string) Option {
+	if len(tags) == 0 {
+		return nopOption
+	}
+	return func(opt *option) {
+		opt.tagOnlyList = tags
+	}
+}
+
+func FromTakt(takt task.Takt, opts ...Option) ([]*Operation, error) {
+	opt := option{}
+	for _, op := range opts {
+		op(&opt)
+	}
+
 	ts := []*Operation{}
 	for name, tsk := range takt.Tasks {
+		if !opt.available(tsk) {
+			continue
+		}
 		tsk := tsk
 		op := Operation{
 			Name:   name,
@@ -62,7 +109,7 @@ func resolveDeps(operations []*Operation) error {
 }
 
 func (t *Operation) dependsOn(dependedTask *Operation) {
-	c := make(chan TaskNotification)
+	c := make(chan taskNotification)
 	dependedTask.status.doneNotification = append(dependedTask.status.doneNotification, c)
 	t.status.waiting = append(t.status.waiting, c)
 }
@@ -77,18 +124,18 @@ func (t Operation) waitDependecies() error {
 		}
 	}
 	if !okToGo {
-		return DependencyNotFulfilledErr
+		return dependencyNotFulfilledErr
 	}
 
 	return nil
 }
 
-func (t Operation) Run(ctx context.Context, prefixLogger io.Writer) error {
+func (t Operation) Run(ctx context.Context, logger io.Writer) error {
 	runner := func() error {
 		if err := t.waitDependecies(); err != nil {
 			return err
 		}
-		if err := t.task.execute(ctx, prefixLogger); err != nil {
+		if err := t.task.Execute(ctx, logger); err != nil {
 			return err
 		}
 		return nil
@@ -96,21 +143,21 @@ func (t Operation) Run(ctx context.Context, prefixLogger io.Writer) error {
 
 	if err := runner(); err != nil {
 		for _, done := range t.status.doneNotification {
-			done <- TaskNotification{
+			done <- taskNotification{
 				ok:   false,
 				name: t.Name,
 			}
 		}
-		if err == DependencyNotFulfilledErr {
+		if err == dependencyNotFulfilledErr {
 			return nil
 		}
-		fmt.Fprintf(prefixLogger, "runner finished with err, %v\n", err)
+		fmt.Fprintf(logger, "runner finished with err, %v\n", err)
 		return err
 	}
 
-	fmt.Fprintf(prefixLogger, "done\n")
+	fmt.Fprintf(logger, "done\n")
 	for _, done := range t.status.doneNotification {
-		done <- TaskNotification{
+		done <- taskNotification{
 			ok:   true,
 			name: t.Name,
 		}
